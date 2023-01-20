@@ -1,9 +1,30 @@
+import os
+import pathlib
+
 from read import read_game
 
 
+def get_games(directory):
+    game_dir = pathlib.Path(directory)
+
+    games = []
+
+    with os.scandir(game_dir) as it:
+        for entry in it:
+            if entry.name.endswith('.json') and entry.is_file():
+                try:
+                    game = Game(entry)
+                    games.append(game)
+                except Exception as e:
+                    print(f'Failed Parsing {entry} - {e}')
+
+    return games
+
+
 class Game:
-    def __init__(self, path):
+    def __init__(self, path: pathlib.Path):
         self.data = read_game(path)
+        self.id = path.name.split('.')[0]
         for key, value in self.data.items():
             if isinstance(value, dict):
                 if key == 'meta':

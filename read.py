@@ -1,7 +1,8 @@
 import json
+import os
 
 
-def read_game(path: str):
+def read_game(path: os.PathLike):
     """
     Read game from given path.
 
