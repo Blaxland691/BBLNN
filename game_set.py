@@ -9,8 +9,7 @@ class Games:
         self.games = get_games(directory)
 
         self.teams = self._get_teams()
-
-        self.game_df = self.generate_games_df()
+        self.game_df = self._generate_games_df()
 
     def get_prediction(self, t1, t2):
         w, l, nr = self.get_record(t1, t2)
@@ -31,13 +30,20 @@ class Games:
     def outcome(self):
         return [game.info.outcome for game in self.games]
 
-    def generate_games_df(self):
+    def _generate_games_df(self):
         winners = []
+        pom = []
         for game in self.games:
             if 'winner' in game.info.outcome:
                 winners.append(game.info.outcome['winner'])
             else:
                 winners.append('NR')
+
+            try:
+                pom.append(game.info.player_of_match[0])
+            except Exception as e:
+                print(e)
+                pom.append('')
 
         teams = [game.info.teams for game in self.games]
 
@@ -46,8 +52,9 @@ class Games:
             'date': [game.info.dates[0] for game in self.games],
             'gender': [game.info.gender for game in self.games],
             'home_team': [team[0] for team in teams],
-            "away_team": [team[1] for team in teams],
-            'winner': winners
+            'away_team': [team[1] for team in teams],
+            'winner': winners,
+            'player_of_match': pom
         })
 
     def get_team_df(self, df, team) -> pd.DataFrame:
@@ -58,16 +65,8 @@ class Games:
 
     def get_record(self, t1, t2):
         df = self.game_df
-
-        df = df[
-            (df.home_team == self.teams[t1]) +
-            (df.away_team == self.teams[t1])
-            ]
-
-        df = df[
-            (df.home_team == self.teams[t2]) +
-            (df.away_team == self.teams[t2])
-            ]
+        df = self.get_team_df(df, t1)
+        df = self.get_team_df(df, t2)
 
         total = len(df['winner'])
         wins = sum(df['winner'] == self.teams[t1])
