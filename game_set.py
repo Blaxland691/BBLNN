@@ -50,6 +50,12 @@ class Games:
             'winner': winners
         })
 
+    def get_team_df(self, df, team) -> pd.DataFrame:
+        return df[
+            (df.home_team == self.teams[team]) +
+            (df.away_team == self.teams[team])
+            ]
+
     def get_record(self, t1, t2):
         df = self.game_df
 
@@ -72,4 +78,14 @@ class Games:
         print(f'W: {wins}, L: {losses}, NR: {nr}')
 
         return wins, losses, nr
+
+    def get_form(self, team, n):
+        df: pd.DataFrame = self.game_df
+        df = df.sort_values('date', ascending=False)
+
+        df = self.get_team_df(df, team)
+        df = df.head(n)
+
+        return list((df['winner'] == self.teams[team]).values)
+
 
