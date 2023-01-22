@@ -33,6 +33,9 @@ class Games:
     def _generate_games_df(self):
         winners = []
         pom = []
+
+        toss_winner = []
+
         for game in self.games:
             if 'winner' in game.info.outcome:
                 winners.append(game.info.outcome['winner'])
@@ -43,7 +46,12 @@ class Games:
                 pom.append(game.info.player_of_match[0])
             except Exception as e:
                 print(e)
-                pom.append('')
+                pom.append('NR')
+
+            if 'winner' in game.info.toss:
+                toss_winner.append(game.info.toss['winner'])
+            else:
+                toss_winner.append('NR')
 
         teams = [game.info.teams for game in self.games]
 
@@ -54,7 +62,10 @@ class Games:
             'home_team': [team[0] for team in teams],
             'away_team': [team[1] for team in teams],
             'winner': winners,
-            'player_of_match': pom
+            'player_of_match': pom,
+            'overs': [game.info.overs for game in self.games],
+            'season': [game.info.season for game in self.games],
+            'toss_winner': toss_winner
         })
 
     def get_team_df(self, df, team) -> pd.DataFrame:
@@ -72,9 +83,6 @@ class Games:
         wins = sum(df['winner'] == self.teams[t1])
         losses = sum(df['winner'] == self.teams[t2])
         nr = total - wins - losses
-
-        print(f'{self.teams[t1]} vs {self.teams[t2]} | {total} games')
-        print(f'W: {wins}, L: {losses}, NR: {nr}')
 
         return wins, losses, nr
 
