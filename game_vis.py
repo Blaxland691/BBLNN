@@ -9,6 +9,7 @@ import game_set as gs
 class PredictNetwork:
     # TODO:
     #  - Get inputs for a given game.
+    #  - Save self.games for quick load.
     def __init__(self, directory):
         self.games = gs.Games(directory)
         self.weights = np.array([1, 3, 2])
