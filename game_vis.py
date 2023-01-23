@@ -37,25 +37,39 @@ class PredictNetwork:
         return norm_res
 
     def display_prediction(self, team_one, team_two):
-        _, odds = self.get_prediction(team_one, team_two)
+        odds = self.get_prediction(team_one, team_two)
         print(f'{self.games.teams[team_one]} vs {self.games.teams[team_two]}')
         print(f'Win Percentage: {odds * 100:.2f} %')
 
     def get_prediction_matrix(self):
+        """
+        Displays the networks results for each team head to head.
+
+        :return: sns.Heatmap
+        """
+
+        # Get active teams.
         teams = self.games.teams
         num_teams = len(teams)
 
+        # Pre-allocate array.
         res = np.zeros([num_teams, num_teams])
 
+        # Iterate over each team match.
         for i, team1 in enumerate(self.games.teams):
             for j, team2 in enumerate(self.games.teams):
-                res[i, j] = self.get_prediction(i, j)
                 if i is j:
                     res[i, j] = None
+                else:
+                    res[i, j] = self.get_prediction(i, j)
 
+        # Create dataframe.
         res = pd.DataFrame(res)
         res.columns = teams
         res.index = teams
 
+        # Plot Heatmap.
         ax = sns.heatmap(res, robust=True, annot=True, linewidth=.5)
         ax.set(xlabel="", ylabel="Win Odds.")
+
+        return ax
