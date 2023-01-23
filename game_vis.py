@@ -8,13 +8,14 @@ import game_set as gs
 class PredictNetwork:
     def __init__(self, directory):
         self.games = gs.Games(directory)
-        self.weights = np.array([1, 3])
+        self.weights = np.array([1, 3, 2])
 
-    def get_inputs(self, team_one, team_two):
-        record = self.get_record_input(team_one, team_two, 3)
-        form = self.get_form_input(team_one, team_two, 5)
+    def get_inputs(self, home_team, away_team):
+        record = self.get_record_input(home_team, away_team, 3)
+        form = self.get_form_input(home_team, away_team, 5)
+        home_record = self.get_home_ground_input(home_team, 10)
 
-        return np.array([record, form])
+        return np.array([record, form, home_record])
 
     def get_record_input(self, team_one, team_two, years):
         # Record against each team.
@@ -30,6 +31,11 @@ class PredictNetwork:
         form_percentage = wins_t1 / (wins_t2 + wins_t1)
 
         return form_percentage
+
+    def get_home_ground_input(self, team, n):
+        # Home ground record.
+        w, l, nr = self.games.get_home_record(team, n)
+        return w / (w + l)
 
     def get_prediction(self, team_one, team_two):
         res = self.get_inputs(team_one, team_two) * self.weights
@@ -70,6 +76,6 @@ class PredictNetwork:
 
         # Plot Heatmap.
         ax = sns.heatmap(res, robust=True, annot=True, linewidth=.5)
-        ax.set(xlabel="", ylabel="Win Odds.")
+        ax.set(xlabel="", ylabel="Home Win Odds.")
 
         return ax

@@ -1,4 +1,4 @@
-# BBLNN
+# Big Bash League Neural Network
 
-### Data
+Data is taken from:
 https://cricsheet.org/matches/

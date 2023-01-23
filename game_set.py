@@ -89,9 +89,20 @@ class Games:
         df = self.get_team_df(df, t1)
         df = self.get_team_df(df, t2)
 
+        return self.get_df_record(df, t1)
+
+    def get_home_record(self, team, n):
+        df = self.get_team_df(self.game_df, team)
+        df = df.sort_values('date', ascending=False)
+        df = df[df['home_team'] == self.teams[team]]
+        df = df.head(n)
+
+        return self.get_df_record(df, team)
+
+    def get_df_record(self, df, team):
         total = len(df['winner'])
-        wins = sum(df['winner'] == self.teams[t1])
-        losses = sum(df['winner'] == self.teams[t2])
+        wins = sum(df['winner'] == self.teams[team])
+        losses = sum(df['winner'] != self.teams[team])
         nr = total - wins - losses
 
         return wins, losses, nr
