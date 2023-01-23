@@ -1,24 +1,46 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
+import torch
+import torchvision
 import game_set as gs
 
 
 class PredictNetwork:
+    # TODO:
+    #  - Get inputs for a given game.
     def __init__(self, directory):
         self.games = gs.Games(directory)
         self.weights = np.array([1, 3, 2])
 
     def get_inputs(self, home_team, away_team):
+        """
+        Get inputs for model.
+
+        :param home_team: (int) home team for game
+        :param away_team: (int) away team for game
+        :return: (np.ndarray) array of compiled data.
+        """
+
         record = self.get_record_input(home_team, away_team, 3)
         form = self.get_form_input(home_team, away_team, 5)
         home_record = self.get_home_ground_input(home_team, 10)
 
         return np.array([record, form, home_record])
 
+    def get_inputs_df(self, home_team, away_team):
+        data = self.get_inputs(home_team, away_team)
+        return pd.DataFrame([data], columns=['Record', 'Form', 'Home Record'])
+
     def get_record_input(self, team_one, team_two, years):
-        # Record against each team.
+        """
+        Record against each team.
+
+        :param team_one: (int)
+        :param team_two: (int)
+        :param years:
+        :return:
+        """
         w, l, nr = self.games.get_record(team_one, team_two, years)
         return w / (w + l)
 
@@ -59,20 +81,23 @@ class PredictNetwork:
         num_teams = len(teams)
 
         # Pre-allocate array.
-        res = np.zeros([num_teams, num_teams])
-
+        res = np.zeros([num_teams, num_teams + 1])
+        sum = np.zeros(num_teams)
         # Iterate over each team match.
         for i, team1 in enumerate(self.games.teams):
             for j, team2 in enumerate(self.games.teams):
-                if i is j:
-                    res[i, j] = None
-                else:
-                    res[i, j] = self.get_prediction(i, j)
+                pred = self.get_prediction(i, j)
+                res[i, j] = pred
+                sum[i] += pred
+        
+        res[:, num_teams] = sum / len(sum)
 
         # Create dataframe.
         res = pd.DataFrame(res)
-        res.columns = teams
         res.index = teams
+        teams.append('Average')
+        res.columns = teams
+        res = res.sort_values(by='Average', ascending=False)
 
         # Plot Heatmap.
         ax = sns.heatmap(res, robust=True, annot=True, linewidth=.5)
