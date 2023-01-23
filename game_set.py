@@ -1,4 +1,5 @@
 import pandas as pd
+import datetime
 
 from game import *
 
@@ -55,7 +56,7 @@ class Games:
 
         teams = [game.info.teams for game in self.games]
 
-        return pd.DataFrame({
+        df = pd.DataFrame({
             'id': [game.id for game in self.games],
             'date': [game.info.dates[0] for game in self.games],
             'gender': [game.info.gender for game in self.games],
@@ -68,14 +69,23 @@ class Games:
             'toss_winner': toss_winner
         })
 
+        df['date'] = pd.to_datetime(df['date'])
+
+        return df
+
     def get_team_df(self, df, team) -> pd.DataFrame:
         return df[
             (df.home_team == self.teams[team]) +
             (df.away_team == self.teams[team])
             ]
 
-    def get_record(self, t1, t2):
+    def get_record(self, t1, t2, years=None):
         df = self.game_df
+
+        if years:
+            date = datetime.datetime.today() - datetime.timedelta(days=years * 365)
+            df = df[df['date'] > date]
+
         df = self.get_team_df(df, t1)
         df = self.get_team_df(df, t2)
 
