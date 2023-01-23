@@ -32,7 +32,7 @@ class Games:
 
     def _generate_games_df(self):
         winners = []
-        pom = []
+        player_of_match = []
 
         toss_winner = []
 
@@ -43,10 +43,10 @@ class Games:
                 winners.append('NR')
 
             try:
-                pom.append(game.info.player_of_match[0])
+                player_of_match.append(game.info.player_of_match[0])
             except Exception as e:
                 print(e)
-                pom.append('NR')
+                player_of_match.append('NR')
 
             if 'winner' in game.info.toss:
                 toss_winner.append(game.info.toss['winner'])
@@ -62,7 +62,7 @@ class Games:
             'home_team': [team[0] for team in teams],
             'away_team': [team[1] for team in teams],
             'winner': winners,
-            'player_of_match': pom,
+            'player_of_match': player_of_match,
             'overs': [game.info.overs for game in self.games],
             'season': [game.info.season for game in self.games],
             'toss_winner': toss_winner
