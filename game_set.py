@@ -34,7 +34,6 @@ class Games:
     def _generate_games_df(self):
         winners = []
         player_of_match = []
-
         toss_winner = []
 
         for game in self.games:

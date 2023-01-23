@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import torch
-import torchvision
 import game_set as gs
 
 
@@ -12,7 +11,10 @@ class PredictNetwork:
     #  - Save self.games for quick load.
     def __init__(self, directory):
         self.games = gs.Games(directory)
-        self.weights = np.array([1, 3, 2])
+        self.weights = np.array([3, 3, 1])
+
+    def get_game_inputs(self, game_index):
+        raise NotImplementedError
 
     def get_inputs(self, home_team, away_team):
         """
@@ -23,13 +25,20 @@ class PredictNetwork:
         :return: (np.ndarray) array of compiled data.
         """
 
-        record = self.get_record_input(home_team, away_team, 3)
+        record = self.get_record_input(home_team, away_team, 2)
         form = self.get_form_input(home_team, away_team, 5)
         home_record = self.get_home_ground_input(home_team, 10)
 
         return np.array([record, form, home_record])
 
     def get_inputs_df(self, home_team, away_team):
+        """
+        Get inputs as a dataframe.
+
+        :param home_team:
+        :param away_team:
+        :return:
+        """
         data = self.get_inputs(home_team, away_team)
         return pd.DataFrame([data], columns=['Record', 'Form', 'Home Record'])
 
