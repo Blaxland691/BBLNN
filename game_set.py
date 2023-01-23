@@ -12,13 +12,6 @@ class Games:
         self.teams = self._get_teams()
         self.game_df = self._generate_games_df()
 
-    def get_prediction(self, t1, t2):
-        w, l, nr = self.get_record(t1, t2)
-        if w > l:
-            return t1
-        else:
-            return t2
-
     def _get_teams(self):
         teams = set()
 
@@ -54,6 +47,7 @@ class Games:
                 toss_winner.append('NR')
 
         teams = [game.info.teams for game in self.games]
+        venue = [game.info.venue for game in self.games]
 
         df = pd.DataFrame({
             'id': [game.id for game in self.games],
@@ -65,10 +59,12 @@ class Games:
             'player_of_match': player_of_match,
             'overs': [game.info.overs for game in self.games],
             'season': [game.info.season for game in self.games],
-            'toss_winner': toss_winner
+            'toss_winner': toss_winner,
+            'venue': venue
         })
 
         df['date'] = pd.to_datetime(df['date'])
+        df = df.sort_values(by='date', ignore_index=True)
 
         return df
 
@@ -78,11 +74,11 @@ class Games:
             (df.away_team == self.teams[team])
             ]
 
-    def get_record(self, t1, t2, years=None):
-        df = self.game_df
+    def get_record(self, game_index, t1, t2, years=None):
+        df = self.game_df[:game_index]
 
         if years:
-            date = datetime.datetime.today() - datetime.timedelta(days=years * 365)
+            date = df['date'][game_index - 1] - datetime.timedelta(days=years * 365)
             df = df[df['date'] > date]
 
         df = self.get_team_df(df, t1)
@@ -90,8 +86,9 @@ class Games:
 
         return self.get_df_record(df, t1)
 
-    def get_home_record(self, team, n):
-        df = self.get_team_df(self.game_df, team)
+    def get_home_record(self, game_index, team, n):
+        df = self.game_df[:game_index]
+        df = self.get_team_df(df, team)
         df = df.sort_values('date', ascending=False)
         df = df[df['home_team'] == self.teams[team]]
         df = df.head(n)
@@ -106,10 +103,9 @@ class Games:
 
         return wins, losses, nr
 
-    def get_form(self, team, n):
-        df: pd.DataFrame = self.game_df
+    def get_form(self, game_index, team, n):
+        df = self.game_df[:game_index]
         df = df.sort_values('date', ascending=False)
-
         df = self.get_team_df(df, team)
         df = df.head(n)
 
