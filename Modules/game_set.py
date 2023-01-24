@@ -2,7 +2,7 @@ import pandas as pd
 import datetime
 import logging
 
-from game import *
+from Modules.game import *
 
 
 class Games:
@@ -80,8 +80,13 @@ class Games:
     def get_record(self, df, t1, t2, seasons=None):
         if seasons:
             current_season_date = df['date'][len(df) - 1]
-            print(type(current_season_date))
-            date = current_season_date - datetime.timedelta(days=seasons * 365)
+            current_datetime = current_season_date.to_pydatetime()
+
+            year = current_datetime.year - seasons
+            if current_datetime.month > 6:
+                year -= 1
+
+            date = datetime.datetime(year, 6, 1)
             df = df[df['date'] > date]
 
         df = self.get_team_df(df, t1)

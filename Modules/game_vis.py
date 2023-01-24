@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import torch
-import game_set as gs
+import Modules.game_set as gs
 
 
 class PredictNetwork:

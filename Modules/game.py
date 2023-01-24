@@ -1,7 +1,7 @@
 import os
 import pathlib
 
-from read import read_game
+from Modules.read import read_game
 
 
 def get_games(directory):
