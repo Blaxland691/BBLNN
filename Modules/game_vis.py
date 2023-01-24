@@ -43,19 +43,19 @@ class PredictNetwork:
         data = self.get_inputs(game_index, home_team, away_team)
         return pd.DataFrame([data], columns=['Record', 'Form', 'Home Record'])
 
-    def get_record_input(self, df, team_one, team_two, years):
+    def get_record_input(self, df, team_one, team_two, seasons):
         """
         Record against each team.
 
         :param df:
         :param team_one: (int)
         :param team_two: (int)
-        :param years:
+        :param seasons:
         :return:
         """
-        w, l, nr = self.games.get_record(df, team_one, team_two, years)
+        w, l, _ = self.games.get_record(df, team_one, team_two, seasons)
 
-        return w / (w + l) if w + l > 0 else 0.5
+        return self.win_loss_result(w, l)
 
     def get_form_input(self, df, team_one, team_two, n):
         """
@@ -71,10 +71,7 @@ class PredictNetwork:
         form_t2 = self.games.get_form(df, team_two, n)
         wins_t2 = sum(form_t2)
 
-        if wins_t1 + wins_t2 > 0:
-            return wins_t1 / (wins_t2 + wins_t1)
-        else:
-            return 0.5
+        return self.win_loss_result(wins_t1, wins_t2)
 
     def get_home_ground_input(self, df, team, n):
         """
@@ -84,8 +81,9 @@ class PredictNetwork:
         :param n:
         :return:
         """
-        w, l, nr = self.games.get_home_record(df, team, n)
-        return w / (w + l) if w + l > 0 else 0.5
+
+        w, l, _ = self.games.get_home_record(df, team, n)
+        return self.win_loss_result(w, l)
 
     def get_prediction(self, team_one, team_two, df):
         """
@@ -120,16 +118,16 @@ class PredictNetwork:
 
         # Pre-allocate array.
         res = np.zeros([num_teams, num_teams + 1])
-        sum = np.zeros(num_teams)
+        teams_sum = np.zeros(num_teams)
 
         # Iterate over each team match.
         for i, team1 in enumerate(self.games.teams):
             for j, team2 in enumerate(self.games.teams):
                 pred = self.get_prediction(i, j, df)
                 res[i, j] = pred
-                sum[i] += pred
-        
-        res[:, num_teams] = sum / len(sum)
+                teams_sum[i] += pred
+
+        res[:, num_teams] = teams_sum / len(teams_sum)
 
         # Create dataframe.
         res = pd.DataFrame(res)
@@ -145,3 +143,7 @@ class PredictNetwork:
         ax.set(xlabel="", ylabel="Home Win Odds.")
 
         return res
+
+    @staticmethod
+    def win_loss_result(wins, losses):
+        return wins / (wins + losses) if wins + losses > 0 else 0.5

@@ -77,9 +77,11 @@ class Games:
             (df.away_team == self.teams[team])
             ]
 
-    def get_record(self, df, t1, t2, years=None):
-        if years:
-            date = df['date'][len(df) - 1] - datetime.timedelta(days=years * 365)
+    def get_record(self, df, t1, t2, seasons=None):
+        if seasons:
+            current_season_date = df['date'][len(df) - 1]
+            print(type(current_season_date))
+            date = current_season_date - datetime.timedelta(days=seasons * 365)
             df = df[df['date'] > date]
 
         df = self.get_team_df(df, t1)
