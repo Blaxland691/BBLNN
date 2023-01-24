@@ -19,6 +19,7 @@ class PredictNetwork:
         """
         Get inputs for model.
 
+        :param df:
         :param home_team: (int) home team for game
         :param away_team: (int) away team for game
         :return: (np.ndarray) array of compiled data.
@@ -59,6 +60,7 @@ class PredictNetwork:
     def get_form_input(self, df, team_one, team_two, n):
         """
 
+        :param df:
         :param team_one:
         :param team_two:
         :param n:
@@ -77,6 +79,7 @@ class PredictNetwork:
     def get_home_ground_input(self, df, team, n):
         """
 
+        :param df:
         :param team:
         :param n:
         :return:
@@ -87,6 +90,7 @@ class PredictNetwork:
     def get_prediction(self, team_one, team_two, df):
         """
 
+        :param df:
         :param team_one:
         :param team_two:
         :return:
@@ -102,6 +106,8 @@ class PredictNetwork:
 
         :return: sns.Heatmap
         """
+
+        average_label = 'Average'
 
         if not game_index:
             game_index = self.games.game_df.shape[0] - 1
@@ -128,11 +134,11 @@ class PredictNetwork:
         # Create dataframe.
         res = pd.DataFrame(res)
         res.index = teams
-        teams.append('Average')
+        teams.append(average_label)
         res.columns = teams
 
         # Sort By Average
-        res = res.sort_values(by='Average', ascending=False)
+        res = res.sort_values(by=average_label, ascending=False)
 
         # Plot Heatmap.
         ax = sns.heatmap(res, robust=True, annot=True, linewidth=.5)
