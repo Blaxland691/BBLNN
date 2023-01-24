@@ -55,7 +55,14 @@ class PredictNetwork:
         return w / (w + l)
 
     def get_form_input(self, game_index, team_one, team_two, n):
-        # Form comparison.
+        """
+
+        :param game_index:
+        :param team_one:
+        :param team_two:
+        :param n:
+        :return:
+        """
         form_t1 = self.games.get_form(game_index, team_one, n)
         wins_t1 = sum(form_t1)
         form_t2 = self.games.get_form(game_index, team_two, n)
@@ -65,11 +72,24 @@ class PredictNetwork:
         return form_percentage
 
     def get_home_ground_input(self, game_index, team, n):
-        # Home ground record.
+        """
+
+        :param game_index:
+        :param team:
+        :param n:
+        :return:
+        """
         w, l, nr = self.games.get_home_record(game_index, team, n)
         return w / (w + l)
 
     def get_prediction(self, team_one, team_two, game_index=None):
+        """
+
+        :param team_one:
+        :param team_two:
+        :param game_index:
+        :return:
+        """
         if not game_index:
             game_index = self.games.game_df.shape[0] - 1
 
@@ -78,16 +98,25 @@ class PredictNetwork:
         return norm_res
 
     def display_prediction(self, team_one, team_two):
+        """
+
+        :param team_one:
+        :param team_two:
+        :return:
+        """
         odds = self.get_prediction(team_one, team_two)
         print(f'{self.games.teams[team_one]} vs {self.games.teams[team_two]}')
         print(f'Win Percentage: {odds * 100:.2f} %')
 
-    def get_prediction_matrix(self, game_index):
+    def get_prediction_matrix(self, game_index=None):
         """
         Displays the networks results for each team head to head.
 
         :return: sns.Heatmap
         """
+
+        if not game_index:
+            game_index = self.games.game_df.shape[0] - 1
 
         # Get active teams.
         teams = self.games.teams
@@ -116,4 +145,4 @@ class PredictNetwork:
         ax = sns.heatmap(res, robust=True, annot=True, linewidth=.5)
         ax.set(xlabel="", ylabel="Home Win Odds.")
 
-        return ax
+        return res

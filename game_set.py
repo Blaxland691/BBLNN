@@ -1,5 +1,6 @@
 import pandas as pd
 import datetime
+import logging
 
 from game import *
 
@@ -28,6 +29,8 @@ class Games:
         winners = []
         player_of_match = []
         toss_winner = []
+        teams = []
+        venue = []
 
         for game in self.games:
             if 'winner' in game.info.outcome:
@@ -38,7 +41,7 @@ class Games:
             try:
                 player_of_match.append(game.info.player_of_match[0])
             except Exception as e:
-                print(e)
+                logging.debug(e)
                 player_of_match.append('NR')
 
             if 'winner' in game.info.toss:
@@ -46,8 +49,8 @@ class Games:
             else:
                 toss_winner.append('NR')
 
-        teams = [game.info.teams for game in self.games]
-        venue = [game.info.venue for game in self.games]
+            teams.append(game.info.teams)
+            venue.append(game.info.venue)
 
         df = pd.DataFrame({
             'id': [game.id for game in self.games],
