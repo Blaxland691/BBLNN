@@ -77,11 +77,9 @@ class Games:
             (df.away_team == self.teams[team])
             ]
 
-    def get_record(self, game_index, t1, t2, years=None):
-        df = self.game_df[:game_index]
-
+    def get_record(self, df, t1, t2, years=None):
         if years:
-            date = df['date'][game_index - 1] - datetime.timedelta(days=years * 365)
+            date = df['date'][len(df) - 1] - datetime.timedelta(days=years * 365)
             df = df[df['date'] > date]
 
         df = self.get_team_df(df, t1)
@@ -89,8 +87,7 @@ class Games:
 
         return self.get_df_record(df, t1)
 
-    def get_home_record(self, game_index, team, n):
-        df = self.game_df[:game_index]
+    def get_home_record(self, df, team, n):
         df = self.get_team_df(df, team)
         df = df.sort_values('date', ascending=False)
         df = df[df['home_team'] == self.teams[team]]
@@ -106,8 +103,7 @@ class Games:
 
         return wins, losses, nr
 
-    def get_form(self, game_index, team, n):
-        df = self.game_df[:game_index]
+    def get_form(self, df, team, n):
         df = df.sort_values('date', ascending=False)
         df = self.get_team_df(df, team)
         df = df.head(n)
