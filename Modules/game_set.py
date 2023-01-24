@@ -7,6 +7,10 @@ from Modules.game import *
 
 class Games:
     def __init__(self, directory):
+        """
+
+        :param directory: (path) directory which contains games.
+        """
         self.dir = directory
         self.games = get_games(directory)
 

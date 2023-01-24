@@ -15,6 +15,35 @@ class PredictNetwork:
         self.games = gs.Games(directory)
         self.weights = np.array([3, 3, 1])
 
+    def get_train_test_data(self, test_results=30):
+        """
+        Get trainable data.
+
+        :return: (pd.DataFrame)
+        """
+
+        df_len = len(self.games.game_df)
+        results = np.zeros((df_len - 2, 3))
+        winner = []
+
+        for i in range(1, df_len - 1):
+            df = copy.deepcopy(self.games.game_df[:i])
+            h_team = self.games.game_df.loc[i]['home_team']
+            a_team = self.games.game_df.loc[i]['away_team']
+
+            res = self.get_inputs(df,
+                                         self.games.teams.index(h_team),
+                                         self.games.teams.index(a_team))
+            results[i - 1, :] = res
+            winner.append(int(self.games.game_df.loc[i]['winner']
+                              == self.games.game_df.loc[i]['home_team']))
+
+        df = pd.DataFrame(results) - 1
+        df.columns = ['Record', 'Form', 'Home Record']
+        df['result'] = winner
+
+        return df[:len(df) - test_results], df[len(df) - test_results:]
+
     def get_inputs(self, df, home_team, away_team):
         """
         Get inputs for model.
@@ -27,7 +56,7 @@ class PredictNetwork:
 
         record = self.get_record_input(df, home_team, away_team, 2)
         form = self.get_form_input(df, home_team, away_team, 5)
-        home_record = self.get_home_ground_input(df, home_team, 3)
+        home_record = self.get_home_ground_input(df, home_team, 5)
 
         return np.array([record, form, home_record])
 
