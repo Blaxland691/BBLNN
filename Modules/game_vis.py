@@ -19,7 +19,7 @@ class PredictNetwork:
         self.weights = np.array([3, 3, 1])
         self.network = Network(9, 2)
 
-    def get_train_test_data(self, test_results=30):
+    def get_train_test_data(self, test_results=30, threshold=30):
         """
         Get trainable data.
 
@@ -27,47 +27,38 @@ class PredictNetwork:
         """
 
         df_len = len(self.games.game_df)
-        results = np.zeros((df_len - 2, 9))
-        winner = []
+        results = np.zeros((df_len - 1 - threshold, 9))
+        winners = []
 
-        for i in range(1, df_len - 1):
+        for ind, i in enumerate(range(threshold, df_len - 1)):
             df = copy.deepcopy(self.games.game_df[:i])
             h_team = self.games.game_df.loc[i]['home_team']
             a_team = self.games.game_df.loc[i]['away_team']
+            h_team_index = self.games.teams.index(h_team)
+            a_team_index = self.games.teams.index(a_team)
 
-            res_conservative = self.get_inputs(df,
-                                               self.games.teams.index(h_team),
-                                               self.games.teams.index(a_team))
+            res_1 = self.get_inputs(df, h_team_index, a_team_index, seasons=1, form=1, home_form=1)
+            res_2 = self.get_inputs(df, h_team_index, a_team_index, seasons=2, form=3, home_form=3)
+            res_3 = self.get_inputs(df, h_team_index, a_team_index, seasons=4, form=5, home_form=5)
 
-            res_broad = self.get_inputs(df,
-                                        self.games.teams.index(h_team),
-                                        self.games.teams.index(a_team),
-                                        seasons=4,
-                                        form=10,
-                                        home_form=5)
+            results[ind, :] = np.append(res_1, [res_2, res_3])
 
-            res_min = self.get_inputs(df,
-                                      self.games.teams.index(h_team),
-                                      self.games.teams.index(a_team),
-                                      seasons=1,
-                                      form=2,
-                                      home_form=2)
-
-            res = np.append(res_conservative, [res_broad, res_min])
-            results[i - 1, :] = res
-            winner.append(int(self.games.game_df.loc[i]['winner']
-                              == self.games.game_df.loc[i]['home_team']))
+            winners.append(int(self.games.game_df.loc[i]['winner'] == self.games.game_df.loc[i]['home_team']))
 
         df = pd.DataFrame(results)
-        df.columns = ['Record_C', 'Form_C', 'Home Record_C',
-                      'Record', 'Form', 'Home Record',
-                      'Record_M', 'Form_M', 'Home Record_M']
-        df['result'] = winner
+        df['result'] = winners
 
         return df[:len(df) - test_results], df[len(df) - test_results:]
 
-    def get_test_train_xy_data(self, test_results=30):
-        train_data, test_data = self.get_train_test_data(100)
+    def get_test_train_xy_data(self, test_results=30, threshold=30):
+        """
+
+        :param test_results:
+        :param threshold:
+        :return:
+        """
+
+        train_data, test_data = self.get_train_test_data(test_results, threshold)
 
         data_len = train_data.shape[1] - 1
         x_test, y_test = test_data.values[:, 0:data_len], test_data.values[:, data_len]
