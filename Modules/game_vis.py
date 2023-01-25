@@ -12,12 +12,10 @@ from torch import nn, optim
 
 class PredictNetwork:
     # TODO:
-    #  - Get inputs for a given game.
     #  - Save self.games for quick load.
-    def __init__(self, directory):
+    def __init__(self, directory, network=(9, 2, None)):
         self.games = gs.Games(directory)
-        self.weights = np.array([3, 3, 1])
-        self.network = Network(9, 2)
+        self.network = Network(*network)
 
     def get_train_test_data(self, test_results=30, threshold=30):
         """
@@ -49,6 +47,15 @@ class PredictNetwork:
         df['result'] = winners
 
         return df[:len(df) - test_results], df[len(df) - test_results:]
+
+    def get_test_data_slice(self, t1, t2):
+        df = copy.deepcopy(self.games.game_df)
+
+        res_1 = self.get_inputs(df, t1, t2, seasons=1, form=1, home_form=1)
+        res_2 = self.get_inputs(df, t1, t2, seasons=2, form=3, home_form=3)
+        res_3 = self.get_inputs(df, t1, t2, seasons=4, form=5, home_form=5)
+
+        return torch.FloatTensor(np.append(res_1, [res_2, res_3]))
 
     def get_test_train_xy_data(self, test_results=30, threshold=30):
         """
@@ -147,19 +154,6 @@ class PredictNetwork:
         w, l, _ = self.games.get_home_record(df, team, n)
         return self.win_loss_result(w, l)
 
-    def get_prediction(self, team_one, team_two, df):
-        """
-
-        :param df:
-        :param team_one:
-        :param team_two:
-        :return:
-        """
-
-        res = self.get_inputs(df, team_one, team_two) * self.weights
-        norm_res = sum(res) / sum(self.weights)
-        return norm_res
-
     def get_prediction_matrix(self, game_index=None):
         """
         Displays the networks results for each team head to head.
@@ -185,7 +179,8 @@ class PredictNetwork:
         # Iterate over each team match.
         for i, team1 in enumerate(self.games.teams):
             for j, team2 in enumerate(self.games.teams):
-                pred = self.get_prediction(i, j, df)
+                input_slice = self.get_test_data_slice(i, j)
+                pred = self.network.get_probability(input_slice)[1]
                 res[i, j] = pred
                 teams_sum[i] += pred
 
@@ -212,9 +207,12 @@ class PredictNetwork:
 
 
 class Network(nn.Module):
-    def __init__(self, inputs: int, outputs: int):
+    def __init__(self, inputs: int, outputs: int, hidden=None):
         layer_one = int(np.sqrt(inputs * outputs))
-        self.hidden_sizes = [layer_one, int(np.max([layer_one / 2, outputs + 1]))]
+        if hidden:
+            self.hidden_sizes = hidden
+        else:
+            self.hidden_sizes = [layer_one, int(np.max([layer_one / 2, outputs + 1]))]
 
         super().__init__()
 
@@ -257,6 +255,7 @@ class Network(nn.Module):
         correct_count, all_count = 0, 0
         for i in range(len(y_test)):
             img = x_test[i].view(1, len(x_test[0]))
+
             # Turn off gradients to speed up this part
             with torch.no_grad():
                 logps = self.model(img)
@@ -272,3 +271,14 @@ class Network(nn.Module):
             all_count += 1
 
         return correct_count / all_count
+
+    def get_probability(self, x_test):
+        # Turn off gradients to speed up this part
+        with torch.no_grad():
+            logps = self.model(x_test.view([1, len(x_test)]))
+
+        # Output of the network are log-probabilities, need to take exponential for probabilities
+        ps = torch.exp(logps)
+        probab = list(ps.numpy()[0])
+
+        return probab
