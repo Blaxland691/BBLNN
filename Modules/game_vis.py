@@ -17,7 +17,7 @@ class PredictNetwork:
     def __init__(self, directory):
         self.games = gs.Games(directory)
         self.weights = np.array([3, 3, 1])
-        self.network = Network(6, 2)
+        self.network = Network(9, 2)
 
     def get_train_test_data(self, test_results=30):
         """
@@ -27,7 +27,7 @@ class PredictNetwork:
         """
 
         df_len = len(self.games.game_df)
-        results = np.zeros((df_len - 2, 6))
+        results = np.zeros((df_len - 2, 9))
         winner = []
 
         for i in range(1, df_len - 1):
@@ -38,28 +38,58 @@ class PredictNetwork:
             res_conservative = self.get_inputs(df,
                                                self.games.teams.index(h_team),
                                                self.games.teams.index(a_team))
+
             res_broad = self.get_inputs(df,
                                         self.games.teams.index(h_team),
                                         self.games.teams.index(a_team),
                                         seasons=4,
                                         form=10,
-                                        home_form=10)
+                                        home_form=5)
 
-            res = np.append(res_conservative, res_broad)
+            res_min = self.get_inputs(df,
+                                      self.games.teams.index(h_team),
+                                      self.games.teams.index(a_team),
+                                      seasons=1,
+                                      form=2,
+                                      home_form=2)
+
+            res = np.append(res_conservative, [res_broad, res_min])
             results[i - 1, :] = res
             winner.append(int(self.games.game_df.loc[i]['winner']
                               == self.games.game_df.loc[i]['home_team']))
 
-        df = pd.DataFrame(results) - 1
-        df.columns = ['Record_C', 'Form_C', 'Home Record_C', 'Record', 'Form', 'Home Record']
+        df = pd.DataFrame(results)
+        df.columns = ['Record_C', 'Form_C', 'Home Record_C',
+                      'Record', 'Form', 'Home Record',
+                      'Record_M', 'Form_M', 'Home Record_M']
         df['result'] = winner
 
         return df[:len(df) - test_results], df[len(df) - test_results:]
+
+    def get_test_train_xy_data(self, test_results=30):
+        train_data, test_data = self.get_train_test_data(100)
+
+        data_len = train_data.shape[1] - 1
+        x_test, y_test = test_data.values[:, 0:data_len], test_data.values[:, data_len]
+        x_train, y_train = train_data.values[:, 0:data_len], train_data.values[:, data_len]
+
+        x_train = torch.FloatTensor(x_train)
+        y_train = torch.FloatTensor(y_train)
+        x_test = torch.FloatTensor(x_test)
+        y_test = torch.FloatTensor(y_test)
+
+        y_train = y_train.type(torch.LongTensor)
+        y_test = y_test.type(torch.LongTensor)
+
+        return x_train, y_train, x_test, y_test
 
     def get_inputs(self, df, home_team, away_team, seasons=2, form=5, home_form=5):
         """
         Get inputs for model.
 
+        :param home_form:
+        :param form:
+        :param seasons:
         :param df:
         :param home_team: (int) home team for game
         :param away_team: (int) away team for game
@@ -211,18 +241,18 @@ class Network(nn.Module):
         self.optimizer = optim.SGD(self.parameters(), lr=0.05, momentum=0.5)
         self.optimizer.zero_grad()
 
-    def train_model(self, x_train, y_train):
+    def train_model(self, x_train, y_train, epochs):
         logps = self.model.forward(x_train)
         self.loss = self.criterion(logps, y_train)
 
-        epochs = 10000
         pbar = tqdm(range(epochs))
 
         for e in pbar:
-            # Training pass
-            self.optimizer.zero_grad()
             output = self.model.forward(x_train)
             loss = self.criterion(output, y_train)
+
+            # Training pass
+            self.optimizer.zero_grad()
 
             # This is where the model learns by back propagating
             loss.backward()
@@ -230,4 +260,24 @@ class Network(nn.Module):
             # And optimizes its weights here
             self.optimizer.step()
             if e % 100 == 0:
-                pbar.set_postfix_str(f'loss: {loss.item():.2f}')
+                pbar.set_postfix_str(f'loss: {loss.item():.2f} - accuracy: {self.test_model(x_train, y_train):.2f}')
+
+    def test_model(self, x_test, y_test):
+        correct_count, all_count = 0, 0
+        for i in range(len(y_test)):
+            img = x_test[i].view(1, len(x_test[0]))
+            # Turn off gradients to speed up this part
+            with torch.no_grad():
+                logps = self.model(img)
+
+            # Output of the network are log-probabilities, need to take exponential for probabilities
+            ps = torch.exp(logps)
+            probab = list(ps.numpy()[0])
+            pred_label = probab.index(max(probab))
+            true_label = y_test.numpy()[i]
+
+            if true_label == pred_label:
+                correct_count += 1
+            all_count += 1
+
+        return correct_count / all_count
