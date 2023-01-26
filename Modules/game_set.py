@@ -36,6 +36,9 @@ class Games:
         teams = []
         venue = []
 
+        htt = []
+        att = []
+
         for game in self.games:
             if 'winner' in game.info.outcome:
                 winners.append(game.info.outcome['winner'])
@@ -53,6 +56,18 @@ class Games:
             else:
                 toss_winner.append('NR')
 
+            try:
+                htt.append(game.get_home_team_total())
+            except Exception as e:
+                logging.debug(e)
+                htt.append(-1)
+
+            try:
+                att.append(game.get_away_team_total())
+            except Exception as e:
+                logging.debug(e)
+                att.append(-1)
+
             teams.append(game.info.teams)
             venue.append(game.info.venue)
 
@@ -67,7 +82,9 @@ class Games:
             'overs': [game.info.overs for game in self.games],
             'season': [game.info.season for game in self.games],
             'toss_winner': toss_winner,
-            'venue': venue
+            'venue': venue,
+            'home_team_total': htt,
+            'away_team_total': att
         })
 
         df['date'] = pd.to_datetime(df['date'])

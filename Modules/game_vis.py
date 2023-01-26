@@ -1,13 +1,11 @@
 import copy
-
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import torch
-import Modules.game_set as gs
-from tqdm import tqdm
 
-from torch import nn, optim
+import Modules.game_set as gs
+import Modules.network as nt
 
 
 class PredictNetwork:
@@ -15,7 +13,7 @@ class PredictNetwork:
     #  - Save self.games for quick load.
     def __init__(self, directory, network=(9, 2, None)):
         self.games = gs.Games(directory)
-        self.network = Network(*network)
+        self.network = nt.Network(*network)
 
     def get_train_test_data(self, test_results=30, threshold=30):
         """
@@ -29,13 +27,13 @@ class PredictNetwork:
         winners = []
 
         for ind, i in enumerate(range(threshold, df_len - 1)):
-            df = copy.deepcopy(self.games.game_df[:i])
+            df = self.games.game_df[:i].copy()
             h_team = self.games.game_df.loc[i]['home_team']
             a_team = self.games.game_df.loc[i]['away_team']
             h_team_index = self.games.teams.index(h_team)
             a_team_index = self.games.teams.index(a_team)
 
-            res_1 = self.get_inputs(df, h_team_index, a_team_index, seasons=1, form=1, home_form=1)
+            res_1 = self.get_inputs(df, h_team_index, a_team_index, seasons=1, form=2, home_form=2)
             res_2 = self.get_inputs(df, h_team_index, a_team_index, seasons=2, form=3, home_form=3)
             res_3 = self.get_inputs(df, h_team_index, a_team_index, seasons=4, form=5, home_form=5)
 
@@ -204,81 +202,3 @@ class PredictNetwork:
     @staticmethod
     def win_loss_result(wins, losses):
         return wins / (wins + losses) if wins + losses > 0 else 0.5
-
-
-class Network(nn.Module):
-    def __init__(self, inputs: int, outputs: int, hidden=None):
-        layer_one = int(np.sqrt(inputs * outputs))
-        if hidden:
-            self.hidden_sizes = hidden
-        else:
-            self.hidden_sizes = [layer_one, int(np.max([layer_one / 2, outputs + 1]))]
-
-        super().__init__()
-
-        self.model = nn.Sequential(
-            nn.Linear(inputs, self.hidden_sizes[0]),
-            nn.ReLU(),
-            nn.Linear(self.hidden_sizes[0], self.hidden_sizes[1]),
-            nn.ReLU(),
-            nn.Linear(self.hidden_sizes[1], outputs),
-            nn.LogSoftmax(dim=1)
-        )
-
-        self.criterion = nn.NLLLoss()
-        self.loss = None
-        self.optimizer = optim.SGD(self.parameters(), lr=0.05, momentum=0.5)
-        self.optimizer.zero_grad()
-
-    def train_model(self, x_train, y_train, epochs):
-        logps = self.model.forward(x_train)
-        self.loss = self.criterion(logps, y_train)
-
-        pbar = tqdm(range(epochs))
-
-        for e in pbar:
-            output = self.model.forward(x_train)
-            loss = self.criterion(output, y_train)
-
-            # Training pass
-            self.optimizer.zero_grad()
-
-            # This is where the model learns by back propagating
-            loss.backward()
-
-            # And optimizes its weights here
-            self.optimizer.step()
-            if e % 100 == 0:
-                pbar.set_postfix_str(f'loss: {loss.item():.2f} - accuracy: {self.test_model(x_train, y_train):.2f}')
-
-    def test_model(self, x_test, y_test):
-        correct_count, all_count = 0, 0
-        for i in range(len(y_test)):
-            img = x_test[i].view(1, len(x_test[0]))
-
-            # Turn off gradients to speed up this part
-            with torch.no_grad():
-                logps = self.model(img)
-
-            # Output of the network are log-probabilities, need to take exponential for probabilities
-            ps = torch.exp(logps)
-            probab = list(ps.numpy()[0])
-            pred_label = probab.index(max(probab))
-            true_label = y_test.numpy()[i]
-
-            if true_label == pred_label:
-                correct_count += 1
-            all_count += 1
-
-        return correct_count / all_count
-
-    def get_probability(self, x_test):
-        # Turn off gradients to speed up this part
-        with torch.no_grad():
-            logps = self.model(x_test.view([1, len(x_test)]))
-
-        # Output of the network are log-probabilities, need to take exponential for probabilities
-        ps = torch.exp(logps)
-        probab = list(ps.numpy()[0])
-
-        return probab

@@ -37,6 +37,19 @@ class Game:
             else:
                 self.__dict__[key] = value
 
+    def get_home_team_total(self):
+        home_team = self.info.teams[0]
+        if self.innings.data[0]['team'] == home_team:
+            return self.innings.totals[0]
+        else:
+            return self.innings.totals[1]
+
+    def get_away_team_total(self):
+        away_team = self.info.teams[1]
+        if self.innings.data[0]['team'] == away_team:
+            return self.innings.totals[0]
+        else:
+            return self.innings.totals[1]
 
 class Meta:
     def __init__(self, meta_data):
@@ -51,7 +64,19 @@ class Info:
 
 
 class Innings:
-    def __init__(self, innings):
-        self.innings = innings
-        self.length = int(len(innings))
+    def __init__(self, data):
+        self.data = data
+        self.length = int(len(data))
 
+        self.totals = self.innings_totals()
+
+    def innings_totals(self):
+        totals = []
+        for innings in self.data:
+            total = 0
+            for over in innings['overs']:
+                for delivery in over['deliveries']:
+                    total += delivery['runs']['total']
+            totals.append(total)
+
+        return totals
