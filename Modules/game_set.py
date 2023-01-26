@@ -123,6 +123,27 @@ class Games:
 
         return self.get_df_record(df, team)
 
+    def get_score_difference(self, df, team, n):
+        df = self.get_team_df(df, team)
+        df = df.sort_values('date', ascending=False, ignore_index=True)
+
+        if len(df) == 0:
+            return [0]
+
+        diff = []
+        for i in range(min(n, len(df))):
+            ht = df['home_team_total'][i]
+            at = df['away_team_total'][i]
+            if at == -1 or ht == -1:
+                diff.insert(0, 0)
+            else:
+                if df['home_team'][i] == self.teams[team]:
+                    diff.insert(0, ht - at)
+                else:
+                    diff.insert(0, at - ht)
+
+        return diff
+
     def get_df_record(self, df, team):
         total = len(df['winner'])
         wins = sum(df['winner'] == self.teams[team])

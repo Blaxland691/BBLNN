@@ -11,7 +11,7 @@ import Modules.network as nt
 class PredictNetwork:
     # TODO:
     #  - Save self.games for quick load.
-    def __init__(self, directory, network=(9, 2, None)):
+    def __init__(self, directory, network=(12, 2, None)):
         self.games = gs.Games(directory)
         self.network = nt.Network(*network)
 
@@ -23,7 +23,7 @@ class PredictNetwork:
         """
 
         df_len = len(self.games.game_df)
-        results = np.zeros((df_len - 1 - threshold, 9))
+        results = []
         winners = []
 
         for ind, i in enumerate(range(threshold, df_len - 1)):
@@ -33,11 +33,11 @@ class PredictNetwork:
             h_team_index = self.games.teams.index(h_team)
             a_team_index = self.games.teams.index(a_team)
 
-            res_1 = self.get_inputs(df, h_team_index, a_team_index, seasons=1, form=2, home_form=2)
-            res_2 = self.get_inputs(df, h_team_index, a_team_index, seasons=2, form=3, home_form=3)
-            res_3 = self.get_inputs(df, h_team_index, a_team_index, seasons=4, form=5, home_form=5)
+            res_1 = self.get_inputs(df, h_team_index, a_team_index, seasons=1, form=2, home_form=2, difference=2)
+            res_2 = self.get_inputs(df, h_team_index, a_team_index, seasons=2, form=4, home_form=4, difference=4)
+            res_3 = self.get_inputs(df, h_team_index, a_team_index, seasons=4, form=8, home_form=8, difference=8)
 
-            results[ind, :] = np.append(res_1, [res_2, res_3])
+            results.append(np.append(res_1, [res_2, res_3]))
 
             winners.append(int(self.games.game_df.loc[i]['winner'] == self.games.game_df.loc[i]['home_team']))
 
@@ -47,11 +47,17 @@ class PredictNetwork:
         return df[:len(df) - test_results], df[len(df) - test_results:]
 
     def get_test_data_slice(self, t1, t2):
+        """
+
+        :param t1:
+        :param t2:
+        :return:
+        """
         df = copy.deepcopy(self.games.game_df)
 
-        res_1 = self.get_inputs(df, t1, t2, seasons=1, form=1, home_form=1)
-        res_2 = self.get_inputs(df, t1, t2, seasons=2, form=3, home_form=3)
-        res_3 = self.get_inputs(df, t1, t2, seasons=4, form=5, home_form=5)
+        res_1 = self.get_inputs(df, t1, t2, seasons=1, form=2, home_form=2, difference=2)
+        res_2 = self.get_inputs(df, t1, t2, seasons=2, form=4, home_form=4, difference=4)
+        res_3 = self.get_inputs(df, t1, t2, seasons=4, form=8, home_form=8, difference=8)
 
         return torch.FloatTensor(np.append(res_1, [res_2, res_3]))
 
@@ -79,7 +85,7 @@ class PredictNetwork:
 
         return x_train, y_train, x_test, y_test
 
-    def get_inputs(self, df, home_team, away_team, seasons=2, form=5, home_form=5):
+    def get_inputs(self, df, home_team, away_team, seasons=2, form=5, home_form=5, difference=5):
         """
         Get inputs for model.
 
@@ -95,20 +101,9 @@ class PredictNetwork:
         record = self.get_record_input(df, home_team, away_team, seasons)
         form = self.get_form_input(df, home_team, away_team, form)
         home_record = self.get_home_ground_input(df, home_team, home_form)
+        sum_difference = self.get_sum_difference_input(df, home_team, difference)
 
-        return np.array([record, form, home_record])
-
-    def get_inputs_df(self, game_index, home_team, away_team):
-        """
-        Get inputs as a dataframe.
-
-        :param game_index:
-        :param home_team:
-        :param away_team:
-        :return:
-        """
-        data = self.get_inputs(game_index, home_team, away_team)
-        return pd.DataFrame([data], columns=['Record', 'Form', 'Home Record'])
+        return np.array([record, form, home_record, sum_difference])
 
     def get_record_input(self, df, team_one, team_two, seasons):
         """
@@ -151,6 +146,9 @@ class PredictNetwork:
 
         w, l, _ = self.games.get_home_record(df, team, n)
         return self.win_loss_result(w, l)
+
+    def get_sum_difference_input(self, df, team, n):
+        return sum(self.games.get_score_difference(df, team, n))
 
     def get_prediction_matrix(self, game_index=None):
         """
