@@ -40,21 +40,9 @@ class Games:
         att = []
 
         for game in self.games:
-            if 'winner' in game.info.outcome:
-                winners.append(game.info.outcome['winner'])
-            else:
-                winners.append('NR')
-
-            try:
-                player_of_match.append(game.info.player_of_match[0])
-            except Exception as e:
-                logging.debug(e)
-                player_of_match.append('NR')
-
-            if 'winner' in game.info.toss:
-                toss_winner.append(game.info.toss['winner'])
-            else:
-                toss_winner.append('NR')
+            winners.append(game.info.winner)
+            player_of_match.append(game.info.player_of_match)
+            toss_winner.append(game.info.toss_winner)
 
             try:
                 htt.append(game.get_home_team_total())

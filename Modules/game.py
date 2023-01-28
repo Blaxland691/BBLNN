@@ -25,6 +25,7 @@ class Game:
     def __init__(self, path: pathlib.Path):
         self.data = read_game(path)
         self.id = path.name.split('.')[0]
+
         for key, value in self.data.items():
             if isinstance(value, dict):
                 if key == 'meta':
@@ -51,6 +52,7 @@ class Game:
         else:
             return self.innings.totals[1]
 
+
 class Meta:
     def __init__(self, meta_data):
         for key, value in meta_data.items():
@@ -59,8 +61,31 @@ class Meta:
 
 class Info:
     def __init__(self, info_data):
-        for key, value in info_data.items():
-            self.__dict__[key] = value
+        self.balls_per_over = info_data.get("balls_per_over")
+        self.dates = info_data.get("dates")
+        self.event = info_data.get("event")
+        self.gender = info_data.get("gender")
+        self.match_type = info_data.get("match_type")
+        self.officials = info_data.get("officials")
+
+        # Outcome and winner
+        self.outcome = info_data.get("outcome")
+        self.winner = self.outcome.get("winner")
+
+        self.overs = info_data.get("overs")
+        self.player_of_match = info_data.get("player_of_match")
+        self.players = info_data.get("players")
+        self.registry = info_data.get("registry")
+        self.season = info_data.get("season")
+        self.team_type = info_data.get("team_type")
+        self.teams = info_data.get("teams")
+
+        # Toss and winner
+        self.toss = info_data.get("toss")
+        self.toss_winner = self.toss.get("winner")
+        self.toss_decision = self.toss.get("decision")
+
+        self.venue = info_data.get("venue")
 
 
 class Innings:
