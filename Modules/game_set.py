@@ -33,6 +33,7 @@ class Games:
         winners = []
         player_of_match = []
         toss_winner = []
+        toss_decision = []
         teams = []
         venue = []
 
@@ -43,24 +44,26 @@ class Games:
             winners.append(game.info.winner)
             player_of_match.append(game.info.player_of_match)
             toss_winner.append(game.info.toss_winner)
+            toss_decision.append(game.info.toss_decision)
 
             try:
                 htt.append(game.get_home_team_total())
             except Exception as e:
                 logging.debug(e)
-                htt.append(-1)
+                htt.append(None)
 
             try:
                 att.append(game.get_away_team_total())
             except Exception as e:
                 logging.debug(e)
-                att.append(-1)
+                att.append(None)
 
             teams.append(game.info.teams)
             venue.append(game.info.venue)
 
         df = pd.DataFrame({
             'id': [game.id for game in self.games],
+            'revision': [game.meta.revision for game in self.games],
             'date': [game.info.dates[0] for game in self.games],
             'gender': [game.info.gender for game in self.games],
             'home_team': [team[0] for team in teams],
@@ -70,6 +73,7 @@ class Games:
             'overs': [game.info.overs for game in self.games],
             'season': [game.info.season for game in self.games],
             'toss_winner': toss_winner,
+            'toss_decision': toss_decision,
             'venue': venue,
             'home_team_total': htt,
             'away_team_total': att

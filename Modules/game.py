@@ -34,23 +34,23 @@ class Game:
                 if key == 'info':
                     self.info = Info(value)
             elif key == 'innings':
-                self.innings = Innings(value)
+                self.game_data = GameData(value)
             else:
                 self.__dict__[key] = value
 
     def get_home_team_total(self):
         home_team = self.info.teams[0]
-        if self.innings.data[0]['team'] == home_team:
-            return self.innings.totals[0]
+        if self.game_data.data[0]['team'] == home_team:
+            return self.game_data.totals[0]
         else:
-            return self.innings.totals[1]
+            return self.game_data.totals[1]
 
     def get_away_team_total(self):
         away_team = self.info.teams[1]
-        if self.innings.data[0]['team'] == away_team:
-            return self.innings.totals[0]
+        if self.game_data.data[0]['team'] == away_team:
+            return self.game_data.totals[0]
         else:
-            return self.innings.totals[1]
+            return self.game_data.totals[1]
 
 
 class Meta:
@@ -88,12 +88,13 @@ class Info:
         self.venue = info_data.get("venue")
 
 
-class Innings:
+class GameData:
     def __init__(self, data):
         self.data = data
         self.length = int(len(data))
 
         self.totals = self.innings_totals()
+        self.scorecard = self.get_scorecard()
 
     def innings_totals(self):
         totals = []
@@ -105,3 +106,20 @@ class Innings:
             totals.append(total)
 
         return totals
+
+    def get_scorecard(self):
+        return Scorecard(self.data)
+
+
+class Scorecard:
+    def __init__(self, game_data):
+        self.innings = []
+
+        for innings in game_data:
+            pass
+
+
+class InningsScorecard:
+    def __init__(self):
+        self.batting = []
+        self.bowling = []
